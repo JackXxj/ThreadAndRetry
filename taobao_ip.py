@@ -73,7 +73,7 @@ def get_redis_proxy():
 def get(url, count, url_desc, proxies, lock, thread_name):
     for i in xrange(count):
         response = r(url, i, url_desc, proxies)
-        if response is None:    # 异常
+        if response is None:    # 异常情况
             pass
         elif response.status_code == 200:
             print '{time_} 状态码：{status_code}'.format(
@@ -81,6 +81,11 @@ def get(url, count, url_desc, proxies, lock, thread_name):
                 status_code=200
             )
             return response
+        elif response.status_code != 200:
+            print '{time_} 非200状态码：{status_code}'.format(
+                time_=time.strftime('[%Y-%m-%d %H:%M:%S]'),
+                status_code=response.status_code
+            )
         with lock:
             THREAD_PROXY_MAP.pop(thread_name)
             if PROXY_IP_Q.empty():
@@ -168,6 +173,8 @@ def taobao_ip(lock, fileout):
                 # con = taobao_req(ip, proxies, '首尾不同ip')    # taobao_ip接口
                 con = taobao_req(ip, proxies, lock, thread_name, '首尾不同ip')    # taobao_ip接口
                 # print '首尾不同的ip,写入文件'
+                if con is None:
+                    continue
                 line.append(con)
                 content = '\t'.join(line)
                 data_write_file(fileout, lock, content)  # 写文件接口
@@ -259,8 +266,8 @@ def main():
     dest_path = '/ftp_samba/cephfs/spider/python/ip/db_ip/taobao/'  # linux上的文件目录
     if not os.path.exists(dest_path):
         os.makedirs(dest_path)
-    dest_file_name = os.path.join(dest_path, 'taobao_ip1_' + file_date)
-    tmp_file_name = os.path.join(dest_path, 'taobao_ip1_' + file_date + '.tmp')
+    dest_file_name = os.path.join(dest_path, 'taobao_ip_' + file_date)
+    tmp_file_name = os.path.join(dest_path, 'taobao_ip_' + file_date + '.tmp')
     fileout = open(tmp_file_name, 'a')
 
     threads = []
